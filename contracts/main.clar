@@ -21,3 +21,24 @@
   { games-played: uint,
     games-won: uint })
 
+;; NFT for rewards
+(define-non-fungible-token game-reward uint)
+
+;; Functions
+
+(define-public (create-game (game-type (string-ascii 20)) (opponent principal))
+  (let ((game-id (+ (default-to u0 (get-last-game-id)) u1)))
+    (map-set games
+      { game-id: game-id }
+      { game-type: game-type,
+        player1: tx-sender,
+        player2: opponent,
+        current-state: "initial",
+        current-turn: tx-sender,
+        winner: none })
+    (ok game-id)))
+
+(define-read-only (get-game (game-id uint))
+  (match (map-get? games { game-id: game-id })
+    game (ok game)
+    (err ERR_GAME_NOT_FOUND)))
