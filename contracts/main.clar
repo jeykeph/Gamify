@@ -58,3 +58,31 @@
                             (get player1 game)) }))
     (ok true)))
 
+(define-public (end-game (game-id uint) (winner principal))
+  (let ((game (unwrap! (get-game game-id) ERR_GAME_NOT_FOUND)))
+    (asserts! (or (is-eq tx-sender (get player1 game)) (is-eq tx-sender (get player2 game))) ERR_NOT_AUTHORIZED)
+    (map-set games
+      { game-id: game-id }
+      (merge game { winner: (some winner) }))
+    (mint-reward winner game-id)
+    (update-player-stats winner)
+    (ok true)))
+
+(define-private (mint-reward (winner principal) (game-id uint))
+  (nft-mint? game-reward game-id winner))
+
+(define-private (update-player-stats (player principal))
+  (let ((stats (default-to { games-played: u0, games-won: u0 }
+                           (map-get? player-stats { player: player }))))
+    (map-set player-stats
+      { player: player }
+      { games-played: (+ (get games-played stats) u1),
+        games-won: (+ (get games-won stats) u1) })))
+
+(define-private (get-last-game-id)
+  (len (map-keys games)))
+
+;; Read-only functions for retrieving player stats
+(define-read-only (get-player-stats (player principal))
+  (default-to { games-played: u0, games-won: u0 }
+              (map-get? player-stats { player: player })))
