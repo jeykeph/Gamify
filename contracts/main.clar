@@ -42,3 +42,19 @@
   (match (map-get? games { game-id: game-id })
     game (ok game)
     (err ERR_GAME_NOT_FOUND)))
+
+
+(define-public (make-move (game-id uint) (move (string-ascii 20)))
+  (let ((game (unwrap! (get-game game-id) ERR_GAME_NOT_FOUND)))
+    (asserts! (is-eq (get current-turn game) tx-sender) ERR_NOT_AUTHORIZED)
+    ;; Here, we would validate the move based on game rules
+    ;; For simplicity, we're just updating the state
+    (map-set games
+      { game-id: game-id }
+      (merge game
+        { current-state: move,
+          current-turn: (if (is-eq (get current-turn game) (get player1 game))
+                            (get player2 game)
+                            (get player1 game)) }))
+    (ok true)))
+
